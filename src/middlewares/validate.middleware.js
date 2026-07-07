@@ -1,22 +1,23 @@
-import { ApiError } from '../utils/ApiError.js';
+export const validate = (schema) => {
 
-// Middleware de validación genérico.
-// Recibe un schema de Zod y valida req.body, req.params o req.query
-// según se indique. Si falla, lanza un ApiError 400 con el detalle.
+    return (req, res, next) => {
 
-export const validate = (schema, source = 'body') => (req, res, next) => {
-    const result = schema.safeParse(req[source]);
+        try {
 
-    if (!result.success) {
-        const details = result.error.issues.map((issue) => ({
-            field: issue.path.join('.'),
-            message: issue.message,
-        }));
-        return next(ApiError.badRequest('Datos inválidos', details));
-    }
+            req.body = schema.parse(req.body);
 
-    req[source] = result.data;
-    next();
+            next();
+
+        } catch (error) {
+
+            return res.status(400).json({
+                status: "error",
+                message: "Datos inválidos",
+                errors: error.errors
+            });
+
+        }
+
+    };
+
 };
-
-export default validate;

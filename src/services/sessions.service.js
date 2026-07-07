@@ -1,5 +1,10 @@
 import sessionsRepository from "../repositories/sessions.repository.js";
-import { createHash } from "../utils/bcrypt.js";
+import {
+    createHash,
+    isValidPassword
+} from "../utils/hash.js";
+
+import { generateToken } from "../utils/jwt.js";
 
 class SessionsService {
 
@@ -16,29 +21,8 @@ class SessionsService {
             password
         } = userData;
 
-        // Validar campos obligatorios
-        if (!first_name || !last_name || !email || !password) {
-            throw new Error("Todos los campos son obligatorios");
-        }
-
-        // Validar email
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (!emailRegex.test(email)) {
-            throw new Error("Correo electrónico inválido");
-        }
-
-        // Validar contraseña
-        if (password.length < 8) {
-            throw new Error("La contraseña debe tener al menos 8 caracteres");
-        }
-
-        // Normalizar email
-        const normalizedEmail = email.trim().toLowerCase();
-
-        // Verificar duplicados
-        const existingUser =
-            await sessionsRepository.findByEmail(normalizedEmail);
+        // Verificar si el correo ya existe
+        const existingUser = await sessionsRepository.findByEmail(email);
 
         if (existingUser) {
             throw new Error("El correo ya está registrado");
@@ -48,14 +32,13 @@ class SessionsService {
         const newUser = {
             first_name,
             last_name,
-            email: normalizedEmail,
+            email,
             password: createHash(password),
             role: "user"
         };
 
         // Guardar usuario
-        const createdUser =
-            await sessionsRepository.create(newUser);
+        const createdUser = await sessionsRepository.create(newUser);
 
         // Eliminar contraseña de la respuesta
         const user = createdUser.toObject();
@@ -63,6 +46,45 @@ class SessionsService {
         delete user.password;
 
         return user;
+    }
+
+    async login(loginData) {
+
+        const {
+            email,
+            password
+        } = loginData;
+
+        // Buscar usuario
+        const user =
+            await sessionsRepository.findByEmail(email);
+
+        // No revelar si falló el correo o la contraseña
+        if (!user) {
+            throw new Error("Credenciales inválidas");
+        }
+
+        // Comparar contraseña
+        const validPassword =
+            isValidPassword(password, user.password);
+
+        if (!validPassword) {
+            throw new Error("Credenciales inválidas");
+        }
+
+        // Generar JWT
+        const token =
+            generateToken(user);
+
+        // Eliminar password
+        const safeUser = user.toObject();
+
+        delete safeUser.password;
+
+        return {
+            user: safeUser,
+            token
+        };
 
     }
 
