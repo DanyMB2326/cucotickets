@@ -1,16 +1,28 @@
-// Modelo base de Usuario.
-// En próximas entregas se conectará a MongoDB (Mongoose) y sumará
-// autenticación (registro, login, JWT, roles).
+import mongoose from "mongoose";
 
-export class User {
-    constructor({ id, firstName, lastName, email, password, role = 'user' }) {
-        this.id = id;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.password = password;
-        this.role = role;
+const userSchema = new mongoose.Schema({
+    first_name: {
+        type: String,
+        required: true
+    },
+    last_name: {
+        type: String,
+        required: true
+    },
+    email: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    password: {
+        type: String,
+        required: true
+    },
+    role: {
+        type: String,
+        enum: ["user","organizer","admin"],
+        default: "user"
     }
-}
+});
 
-export default User;
+export default mongoose.model("User", userSchema);

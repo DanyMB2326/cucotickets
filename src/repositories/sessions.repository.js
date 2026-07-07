@@ -1,12 +1,19 @@
-import sessionsDao from '../dao/sessions.dao.js';
-
-// Estructura inicial. La lógica de autenticación se incorporará
-// en próximas entregas (registro, login, JWT, cookies, Passport).
+import sessionsDao from "../dao/sessions.dao.js";
 
 class SessionsRepository {
+
     async getCurrent() {
         return sessionsDao.getCurrent();
     }
+
+    async findByEmail(email) {
+        return sessionsDao.findByEmail(email);
+    }
+
+    async create(user) {
+        return sessionsDao.create(user);
+    }
+
 }
 
 export default new SessionsRepository();

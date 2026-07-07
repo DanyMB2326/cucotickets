@@ -1,9 +1,14 @@
-import { Router } from 'express';
-import { getCurrentSession } from '../controllers/sessions.controller.js';
+import { Router } from "express";
+
+import {
+    getCurrent,
+    register
+} from "../controllers/sessions.controller.js";
 
 const router = Router();
 
-// Estructura inicial. Próximas entregas: /register, /login, /logout
-router.get('/current', getCurrentSession);
+router.get("/current", getCurrent);
+
+router.post("/register", register);
 
 export default router;
