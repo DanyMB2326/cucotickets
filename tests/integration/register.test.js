@@ -23,3 +23,59 @@ test("POST /api/sessions/register debe responder", async () => {
     assert.equal(response.status, 201);
 
 });
+
+test("POST /api/sessions/register - Email inválido", async () => {
+
+    const response = await request(app)
+        .post("/api/sessions/register")
+        .send({
+            first_name: "Daniela",
+            last_name: "Martinez",
+            email: "correo-invalido",
+            password: "12345678"
+        });
+
+    assert.equal(response.status, 400);
+
+});
+
+test("POST /api/sessions/register - Password demasiado corta", async () => {
+
+    const response = await request(app)
+        .post("/api/sessions/register")
+        .send({
+            first_name: "Daniela",
+            last_name: "Martinez",
+            email: `short${Date.now()}@gmail.com`,
+            password: "123"
+        });
+
+    assert.equal(response.status, 400);
+
+});
+
+test("POST /api/sessions/register - Usuario duplicado", async () => {
+
+    const email = `duplicado${Date.now()}@gmail.com`;
+
+    await request(app)
+        .post("/api/sessions/register")
+        .send({
+            first_name: "Daniela",
+            last_name: "Martinez",
+            email,
+            password: "12345678"
+        });
+
+    const response = await request(app)
+        .post("/api/sessions/register")
+        .send({
+            first_name: "Daniela",
+            last_name: "Martinez",
+            email,
+            password: "12345678"
+        });
+
+    assert.equal(response.status, 400);
+
+});

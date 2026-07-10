@@ -1,5 +1,5 @@
 import sessionsService from "../services/sessions.service.js";
-
+import { generateToken } from "../utils/jwt.js";
 export const getCurrent = async (req, res) => {
 
     res.status(200).json({
@@ -9,33 +9,28 @@ export const getCurrent = async (req, res) => {
 
 };
 
-export const register = async (req, res) => {
+export const register = async (req, res, next) => {
 
     try {
 
-        const user = await sessionsService.register(req.body);
-
         res.status(201).json({
             status: "success",
-            payload: user
+            payload: req.user
         });
 
     } catch (error) {
-
-        res.status(400).json({
-            status: "error",
-            message: error.message
-        });
-
+        next(error);
     }
 
 };
 
-export const login = async (req, res) => {
+export const login = async (req, res, next) => {
 
     try {
 
-        const { user, token } = await sessionsService.login(req.body);
+        const user = req.user;
+
+        const token = generateToken(user);
 
         res.cookie("currentUser", token, {
             httpOnly: true,
@@ -51,10 +46,7 @@ export const login = async (req, res) => {
 
     } catch (error) {
 
-        res.status(401).json({
-            status: "error",
-            message: error.message
-        });
+        next(error);
 
     }
 

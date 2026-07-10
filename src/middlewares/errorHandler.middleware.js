@@ -11,9 +11,12 @@ export const errorHandler = (err, req, res, next) => {
     const message = isApiError ? err.message : 'Error interno del servidor';
 
     if (!isApiError) {
+        console.error("ERROR COMPLETO:");
+        console.error(err);
+
         logger.error(err.stack || err.message);
     }
-
+    
     res.status(statusCode).json({
         status: 'error',
         message,
