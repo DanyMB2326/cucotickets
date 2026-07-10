@@ -10,6 +10,10 @@ class SessionsDao {
         return await User.create(user);
     }
 
+    async findAll() {
+        return await User.find().select("-password");
+    }
+
 }
 
 export default new SessionsDao();

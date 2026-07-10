@@ -81,6 +81,15 @@ class SessionsService {
 
     }
 
+    async getAllUsers() {
+        return await sessionsRepository.findAll();
+    }
+
 }
+
+console.log(
+    "Métodos de SessionsService:",
+    Object.getOwnPropertyNames(SessionsService.prototype)
+);
 
 export default new SessionsService();

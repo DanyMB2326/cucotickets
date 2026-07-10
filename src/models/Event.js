@@ -1,15 +1,33 @@
-// Modelo base de Evento.
-// En próximas entregas se sumarán cupos, inscripciones y relación con sesiones.
+import mongoose from "mongoose";
 
-export class Event {
-    constructor({ id, title, description, date, location, capacity = 0 }) {
-        this.id = id;
-        this.title = title;
-        this.description = description;
-        this.date = date;
-        this.location = location;
-        this.capacity = capacity;
+const eventSchema = new mongoose.Schema(
+    {
+        title: {
+            type: String,
+            required: true
+        },
+        description: {
+            type: String,
+            required: true
+        },
+        date: {
+            type: Date,
+            required: true
+        },
+        organizer: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required: true
+        },
+        status: {
+            type: String,
+            enum: ["published", "cancelled"],
+            default: "published"
+        }
+    },
+    {
+        timestamps: true
     }
-}
+);
 
-export default Event;
+export default mongoose.model("Event", eventSchema);

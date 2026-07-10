@@ -1,21 +1,23 @@
-import eventsDao from '../dao/events.dao.js';
-
-// El repositorio abstrae el origen de los datos (DAO) de la capa de servicios.
-// Esto permite cambiar la fuente de datos (memoria, MongoDB, etc.)
-// sin afectar la lógica de negocio.
+import eventsDao from "../dao/events.dao.js";
 
 class EventsRepository {
-    async getAll() {
-        return eventsDao.getAll();
+
+    create(event) {
+        return eventsDao.create(event);
     }
 
-    async getById(id) {
-        return eventsDao.getById(id);
+    findById(id) {
+        return eventsDao.findById(id);
     }
 
-    async create(eventData) {
-        return eventsDao.create(eventData);
+    findAll() {
+        return eventsDao.findAll();
     }
+
+    update(id, data) {
+        return eventsDao.update(id, data);
+    }
+
 }
 
 export default new EventsRepository();

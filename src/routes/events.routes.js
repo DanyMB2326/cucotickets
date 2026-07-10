@@ -1,12 +1,49 @@
-import { Router } from 'express';
-import { getAllEvents, getEventById, createEvent } from '../controllers/events.controller.js';
-import { validate } from '../middlewares/validate.middleware.js';
-import { createEventSchema } from '../schemas/event.schema.js';
+import { Router } from "express";
+import passport from "passport";
+
+import {
+    createEvent,
+    getEvents,
+    updateEvent
+} from "../controllers/events.controller.js";
+
+import { authorize } from "../middlewares/authorization.middleware.js";
 
 const router = Router();
 
-router.get('/', getAllEvents);
-router.get('/:id', getEventById);
-router.post('/', validate(createEventSchema), createEvent);
+router.get(
+    "/",
+    getEvents
+);
+
+router.post(
+    "/",
+    passport.authenticate(
+        "current",
+        {
+            session: false
+        }
+    ),
+    authorize(
+        "organizer",
+        "admin"
+    ),
+    createEvent
+);
+
+router.put(
+    "/:id",
+    passport.authenticate(
+        "current",
+        {
+            session: false
+        }
+    ),
+    authorize(
+        "organizer",
+        "admin"
+    ),
+    updateEvent
+);
 
 export default router;

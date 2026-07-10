@@ -1,23 +1,27 @@
-// DAO de eventos.
-// Por ahora usa un arreglo en memoria como placeholder.
-// En próximas entregas este archivo se reemplazará por el acceso
-// real a MongoDB (Mongoose) sin modificar las capas superiores.
-
-const events = [];
+import Event from "../models/Event.js";
 
 class EventsDao {
-    async getAll() {
-        return events;
+
+    async create(event) {
+        return await Event.create(event);
     }
 
-    async getById(id) {
-        return events.find((event) => event.id === id) || null;
+    async findById(id) {
+        return await Event.findById(id);
     }
 
-    async create(eventData) {
-        events.push(eventData);
-        return eventData;
+    async findAll() {
+        return await Event.find().populate("organizer", "first_name last_name email");
     }
+
+    async update(id, data) {
+        return await Event.findByIdAndUpdate(
+            id,
+            data,
+            { new: true }
+        );
+    }
+
 }
 
 export default new EventsDao();

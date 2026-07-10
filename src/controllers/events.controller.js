@@ -1,24 +1,65 @@
-import eventsService from '../services/events.service.js';
-import { asyncHandler } from '../utils/asyncHandler.js';
-import { ApiError } from '../utils/ApiError.js';
+import eventsService from "../services/events.service.js";
 
-export const getAllEvents = asyncHandler(async (req, res) => {
-    const events = await eventsService.getAllEvents();
-    res.status(200).json({ status: 'ok', payload: events });
-});
+export const createEvent = async (req, res, next) => {
 
-export const getEventById = asyncHandler(async (req, res) => {
-    const { id } = req.params;
-    const event = await eventsService.getEventById(id);
+    try {
 
-    if (!event) {
-        throw ApiError.notFound('Evento no encontrado');
+        const event = await eventsService.create(
+            req.body,
+            req.user.id
+        );
+
+        res.status(201).json({
+            status: "success",
+            payload: event
+        });
+
+    } catch (error) {
+
+        next(error);
+
     }
 
-    res.status(200).json({ status: 'ok', payload: event });
-});
+};
 
-export const createEvent = asyncHandler(async (req, res) => {
-    const newEvent = await eventsService.createEvent(req.body);
-    res.status(201).json({ status: 'ok', payload: newEvent });
-});
+export const getEvents = async (req, res, next) => {
+
+    try {
+
+        const events = await eventsService.getAll();
+
+        res.status(200).json({
+            status: "success",
+            payload: events
+        });
+
+    } catch (error) {
+
+        next(error);
+
+    }
+
+};
+
+export const updateEvent = async (req, res, next) => {
+
+        try {
+
+            const event = await eventsService.update(
+                req.params.id,
+                req.body,
+                req.user
+            );
+
+            res.status(200).json({
+                status: "success",
+                payload: event
+            });
+
+        } catch (error) {
+
+            next(error);
+
+        }
+
+    };

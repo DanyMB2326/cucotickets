@@ -12,6 +12,9 @@ export class ApiError extends Error {
         this.details = details;
     }
 
+    static forbidden(message = "Acceso denegado") {
+        return new ApiError(403, message);
+    }
     static badRequest(message, details = null) {
         return new ApiError(400, message, details);
     }

@@ -1,11 +1,14 @@
 import { Router } from "express";
 import passport from "passport";
+import { authorize } from "../middlewares/authorization.middleware.js";
+
 
 import {
     getCurrent,
     register,
     login, 
-    logout
+    logout,
+    getUsers
 } from "../controllers/sessions.controller.js";
 
 import { validate } from "../middlewares/validate.middleware.js";
@@ -54,5 +57,17 @@ router.post(
 );
 
 router.post("/logout", logout);
+
+router.get(
+    "/users",
+    passport.authenticate(
+        "current",
+        {
+            session: false
+        }
+    ),
+    authorize("admin"),
+    getUsers
+);
 
 export default router;

@@ -10,6 +10,10 @@ class SessionsRepository {
         return sessionsDao.create(user);
     }
 
+    async findAll() {
+        return sessionsDao.findAll();
+    }
+
 }
 
 export default new SessionsRepository();
