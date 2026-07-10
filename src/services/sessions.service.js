@@ -5,13 +5,8 @@ import {
 } from "../utils/hash.js";
 
 import { generateToken } from "../utils/jwt.js";
-
+import ApiError from "../utils/ApiError.js";
 class SessionsService {
-
-    async getCurrentSession() {
-        return sessionsRepository.getCurrent();
-    }
-
     async register(userData) {
 
         const {
@@ -25,9 +20,8 @@ class SessionsService {
         const existingUser = await sessionsRepository.findByEmail(email);
 
         if (existingUser) {
-            throw new Error("El correo ya está registrado");
+            throw ApiError.conflict("El correo ya está registrado");
         }
-
         // Crear usuario
         const newUser = {
             first_name,
@@ -55,13 +49,13 @@ class SessionsService {
             password
         } = loginData;
 
-        // Buscar usuario
-        const user =
-            await sessionsRepository.findByEmail(email);
+        const normalizedEmail = email.trim().toLowerCase();
 
-        // No revelar si falló el correo o la contraseña
+        const user = await sessionsRepository.findByEmail(normalizedEmail);
+
+                // No revelar si falló el correo o la contraseña
         if (!user) {
-            throw new Error("Credenciales inválidas");
+            throw ApiError.unauthorized("Credenciales inválidas");
         }
 
         // Comparar contraseña
@@ -69,9 +63,8 @@ class SessionsService {
             isValidPassword(password, user.password);
 
         if (!validPassword) {
-            throw new Error("Credenciales inválidas");
+            throw ApiError.unauthorized("Credenciales inválidas");
         }
-
         // Generar JWT
         const token =
             generateToken(user);

@@ -1,17 +1,8 @@
-# Plataforma de Eventos e Inscripciones
+# Plataforma de Eventos e Inscripciones - Backend
 
-Backend desarrollado con **Node.js**, **Express** y **MongoDB** para la gestión de usuarios de una Plataforma de Eventos e Inscripciones.
+API REST desarrollada con **Node.js**, **Express** y **MongoDB** para la gestión de usuarios y autenticación.
 
-## Características
-
-- Registro seguro de usuarios
-- Inicio de sesión con JWT
-- Autenticación mediante cookies HTTP Only
-- Middleware de autenticación
-- Hash de contraseñas con bcrypt
-- Validación de datos con Zod
-- Arquitectura en capas
-- Pruebas unitarias e integración
+Esta versión implementa autenticación centralizada mediante **Passport.js**, utilizando **JWT** almacenado en una **cookie HTTP Only** para mantener la sesión autenticada.
 
 ---
 
@@ -19,54 +10,92 @@ Backend desarrollado con **Node.js**, **Express** y **MongoDB** para la gestión
 
 - Node.js
 - Express
-- MongoDB
+- MongoDB Atlas / MongoDB
 - Mongoose
-- bcrypt
+- Passport.js
+- Passport Local
+- Passport JWT
 - JSON Web Token (JWT)
-- cookie-parser
+- bcrypt
 - Zod
 - Supertest
-- Node Test Runner
+- Dotenv
 
 ---
 
-# Arquitectura
+# Arquitectura del proyecto
 
-El proyecto sigue una arquitectura por capas:
+El proyecto sigue una arquitectura por capas para mantener el código organizado y facilitar el mantenimiento.
+
+```
+Routes
+    │
+    ▼
+Passport Strategies
+    │
+    ▼
+Controllers
+    │
+    ▼
+Services
+    │
+    ▼
+Repositories
+    │
+    ▼
+DAO
+    │
+    ▼
+MongoDB
+```
+
+Cada capa tiene una única responsabilidad.
+
+---
+
+# Estructura del proyecto
 
 ```
 src
 │
 ├── config
+│   ├── env.config.js
+│   ├── mongoose.js
+│   └── passport.config.js
+│
 ├── controllers
+│
 ├── dao
+│
 ├── middlewares
+│
 ├── models
+│
 ├── repositories
+│
 ├── routes
+│
 ├── schemas
+│
 ├── services
+│
 ├── utils
+│   ├── ApiError.js
+│   ├── hash.js
+│   ├── jwt.js
+│   └── logger.js
+│
 └── app.js
+
+server.js
+package.json
 ```
-
-Cada capa tiene una responsabilidad específica:
-
-- **Routes:** definición de endpoints.
-- **Controllers:** manejo de solicitudes y respuestas.
-- **Services:** lógica de negocio.
-- **Repositories:** comunicación con el DAO.
-- **DAO:** acceso a MongoDB mediante Mongoose.
-- **Models:** modelos de la base de datos.
-- **Middlewares:** autenticación, validación y manejo de errores.
-- **Schemas:** validaciones con Zod.
-- **Utils:** funciones reutilizables (JWT y bcrypt).
 
 ---
 
 # Instalación
 
-## 1. Clonar el repositorio
+Clonar el repositorio:
 
 ```bash
 git clone <URL_DEL_REPOSITORIO>
@@ -78,9 +107,7 @@ Entrar al proyecto:
 cd plataforma-eventos
 ```
 
----
-
-## 2. Instalar dependencias
+Instalar dependencias:
 
 ```bash
 npm install
@@ -88,36 +115,100 @@ npm install
 
 ---
 
-## 3. Configurar variables de entorno
+# Variables de entorno
 
-Crear un archivo **.env** tomando como base **.env.example**.
+Crear un archivo `.env` utilizando como base `.env.example`.
 
 Ejemplo:
 
 ```env
 PORT=8080
+
 NODE_ENV=development
 
 MONGO_URL=mongodb://localhost:27017/plataforma-eventos
 
-JWT_SECRET=mi_clave_super_secreta
+JWT_SECRET=tu_secreto
 
 JWT_EXPIRES_IN=1h
 ```
 
+Para pruebas se utiliza un archivo independiente:
+
+```text
+.env.test
+```
+
 ---
 
-## 4. Ejecutar el servidor
+# Ejecutar el proyecto
+
+Modo desarrollo
+
+```bash
+npm run dev
+```
+
+Modo producción
 
 ```bash
 npm start
 ```
 
-Servidor:
+---
 
+# Pruebas
+
+Ejecutar todas las pruebas:
+
+```bash
+npm test
 ```
-http://localhost:8080
-```
+
+Las pruebas verifican:
+
+- Registro de usuarios
+- Inicio de sesión
+- Usuario autenticado
+- Acceso sin autenticación
+- Hash de contraseñas
+- Generación y validación de JWT
+
+---
+
+# Estrategias Passport
+
+La autenticación se encuentra centralizada mediante Passport.js.
+
+## register
+
+Se encarga de:
+
+- Registrar nuevos usuarios
+- Validar correo duplicado
+- Hashear la contraseña con bcrypt
+- Asignar el rol por defecto (`user`)
+
+---
+
+## login
+
+Se encarga de:
+
+- Validar credenciales
+- Autenticar usuarios mediante Passport Local
+
+Después de una autenticación exitosa, el **controller** genera el JWT y crea la cookie HTTP Only.
+
+---
+
+## current
+
+Utiliza Passport JWT para:
+
+- Leer el JWT desde la cookie `currentUser`
+- Validar el token
+- Colocar el usuario autenticado en `req.user`
 
 ---
 
@@ -131,7 +222,7 @@ http://localhost:8080
 /api/sessions/register
 ```
 
-Body
+### Request
 
 ```json
 {
@@ -142,7 +233,7 @@ Body
 }
 ```
 
-Respuesta
+### Response
 
 ```json
 {
@@ -167,31 +258,29 @@ Respuesta
 /api/sessions/login
 ```
 
-Body
+### Request
 
 ```json
 {
-    "email":"daniela@gmail.com",
-    "password":"12345678"
+    "email": "daniela@gmail.com",
+    "password": "12345678"
 }
 ```
 
-Respuesta
+### Response
 
 ```json
 {
-    "status":"success",
-    "payload":{
-        "_id":"...",
-        "first_name":"Daniela",
-        "last_name":"Martinez",
-        "email":"daniela@gmail.com",
-        "role":"user"
+    "status": "success",
+    "payload": {
+        "_id": "...",
+        "email": "daniela@gmail.com",
+        "role": "user"
     }
 }
 ```
 
-Además genera una cookie HTTP Only llamada:
+Genera una cookie HTTP Only llamada:
 
 ```
 currentUser
@@ -207,17 +296,15 @@ currentUser
 /api/sessions/current
 ```
 
-Requiere la cookie generada durante el login.
-
-Respuesta
+### Response
 
 ```json
 {
-    "status":"success",
-    "payload":{
-        "id":"...",
-        "email":"daniela@gmail.com",
-        "role":"user"
+    "status": "success",
+    "payload": {
+        "id": "...",
+        "email": "daniela@gmail.com",
+        "role": "user"
     }
 }
 ```
@@ -232,77 +319,93 @@ Respuesta
 /api/sessions/logout
 ```
 
-Respuesta
+Elimina la cookie `currentUser`.
 
-```json
-{
-    "status":"success",
-    "message":"Sesión cerrada correctamente"
-}
+---
+
+# Flujo de autenticación
+
+```
+Registro
+     │
+     ▼
+Login
+     │
+     ▼
+Passport Local
+     │
+     ▼
+JWT
+     │
+     ▼
+Cookie HTTP Only
+     │
+     ▼
+GET /current
+     │
+     ▼
+Passport JWT
+     │
+     ▼
+Usuario autenticado
+     │
+     ▼
+Logout
 ```
 
 ---
 
-# Seguridad implementada
+# Seguridad
 
-- Contraseñas protegidas mediante bcrypt.
-- JWT firmado utilizando una clave almacenada en variables de entorno.
-- Cookies HTTP Only.
+El proyecto implementa las siguientes medidas de seguridad:
+
+- Contraseñas almacenadas mediante bcrypt.
+- JWT firmado con una clave secreta.
+- Cookie HTTP Only.
 - Validación de datos con Zod.
-- Normalización del correo electrónico.
-- Prevención de usuarios duplicados.
-- El password nunca se devuelve en las respuestas.
+- Manejo centralizado de errores.
+- Variables de entorno mediante dotenv.
+- Password nunca devuelto en respuestas.
+- Password nunca incluido en el JWT.
 
 ---
 
-# Pruebas
+# Escalabilidad
 
-Ejecutar todas las pruebas:
+La autenticación fue centralizada mediante Passport.js para facilitar la incorporación de nuevas estrategias sin modificar la estructura del proyecto.
 
-```bash
-npm test
-```
+El sistema queda preparado para integrar proveedores como:
 
-Las pruebas incluyen:
-
-## Integración
-
-- Registro exitoso
-- Registro con email inválido
-- Registro con usuario duplicado
-- Login exitoso
-- Login con credenciales inválidas
-- Consulta del usuario autenticado
-- Consulta sin autenticación
-- Logout
-
-## Unitarias
-
-- Hash de contraseñas
-- Generación y validación de JWT
+- Google OAuth
+- GitHub OAuth
+- Facebook OAuth
 
 ---
 
-# Variables de entorno
+## Estado del proyecto
 
-El proyecto utiliza:
+✅ Registro de usuarios
 
-| Variable | Descripción |
-|----------|-------------|
-| PORT | Puerto del servidor |
-| MONGO_URL | Cadena de conexión a MongoDB |
-| JWT_SECRET | Clave para firmar los JWT |
-| JWT_EXPIRES_IN | Tiempo de expiración del JWT |
-| NODE_ENV | development o production |
+✅ Login
 
----
+✅ JWT
+
+✅ Cookies HTTP Only
+
+✅ Passport.js
+
+✅ MongoDB
+
+✅ Pruebas automatizadas
+
+✅ Arquitectura por capas
 
 # Autor
 
 **Daniela Martínez Bravo**
 
-Facultad de Ingeniería - UNAM
+Facultad de Ingeniería
 
-Ingeniería en Computación
+Universidad Nacional Autónoma de México (UNAM)
 
-Proyecto desarrollado para la asignatura **Backend II**.
+Backend II

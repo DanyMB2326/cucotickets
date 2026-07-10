@@ -2,10 +2,6 @@ import User from "../models/User.js";
 
 class SessionsDao {
 
-    async getCurrent() {
-        return null;
-    }
-
     async findByEmail(email) {
         return await User.findOne({ email });
     }

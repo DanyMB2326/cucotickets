@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { auth } from "../middlewares/auth.middleware.js";
+import passport from "passport";
 
 import {
     getCurrent,
@@ -19,19 +19,37 @@ const router = Router();
 
 router.get(
     "/current",
-    auth,
+    passport.authenticate(
+        "current",
+        {
+            session: false
+        }
+    ),
     getCurrent
 );
 
 router.post(
     "/register",
     validate(registerSchema),
+    passport.authenticate(
+        "register",
+        {
+            session: false
+        }
+    ),
     register
 );
 
 router.post(
     "/login",
     validate(loginSchema),
+    passport.authenticate(
+        "login",
+        {
+            session: false,
+            failureMessage: true
+        }
+    ),
     login
 );
 

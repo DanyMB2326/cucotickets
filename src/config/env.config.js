@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 
-dotenv.config();
+const envFile = process.env.ENV_FILE || ".env";
+
+dotenv.config({ path: envFile });
 
 export const config = {
     port: process.env.PORT || 8080,

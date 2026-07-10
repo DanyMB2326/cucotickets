@@ -2,10 +2,6 @@ import sessionsDao from "../dao/sessions.dao.js";
 
 class SessionsRepository {
 
-    async getCurrent() {
-        return sessionsDao.getCurrent();
-    }
-
     async findByEmail(email) {
         return sessionsDao.findByEmail(email);
     }
