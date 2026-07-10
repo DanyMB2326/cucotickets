@@ -10,8 +10,12 @@ class EventsRepository {
         return eventsDao.findById(id);
     }
 
-    findAll() {
-        return eventsDao.findAll();
+    find(query, options) {
+        return eventsDao.find(query, options);
+    }
+
+    count(query) {
+        return eventsDao.count(query);
     }
 
     update(id, data) {

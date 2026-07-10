@@ -50,7 +50,6 @@ router.post(
         "login",
         {
             session: false,
-            failureMessage: true
         }
     ),
     login

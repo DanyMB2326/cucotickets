@@ -1,8 +1,8 @@
 # Plataforma de Eventos e Inscripciones - Backend
 
-API REST desarrollada con **Node.js**, **Express** y **MongoDB** para la gestión de usuarios y autenticación.
+API REST desarrollada con **Node.js**, **Express** y **MongoDB** para la gestión de usuarios, autenticación y administración de eventos.
 
-Esta versión implementa autenticación centralizada mediante **Passport.js**, utilizando **JWT** almacenado en una **cookie HTTP Only** para mantener la sesión autenticada.
+La aplicación implementa autenticación centralizada mediante **Passport.js**, utilizando **JWT** almacenado en una **cookie HTTP Only**, además de un sistema de autorización basado en roles y un CRUD completo para la entidad **Event**.
 
 ---
 
@@ -25,7 +25,7 @@ Esta versión implementa autenticación centralizada mediante **Passport.js**, u
 
 # Arquitectura del proyecto
 
-El proyecto sigue una arquitectura por capas para mantener el código organizado y facilitar el mantenimiento.
+El proyecto sigue una arquitectura por capas para mantener el código organizado y facilitar su mantenimiento.
 
 ```
 Routes
@@ -49,7 +49,7 @@ DAO
 MongoDB
 ```
 
-Cada capa tiene una única responsabilidad.
+Cada capa posee una única responsabilidad.
 
 ---
 
@@ -98,13 +98,13 @@ package.json
 Clonar el repositorio:
 
 ```bash
-git clone <URL_DEL_REPOSITORIO>
+git clone https://github.com/DanyMB2326/cucotickets.git
 ```
 
 Entrar al proyecto:
 
 ```bash
-cd plataforma-eventos
+cd cucotickets
 ```
 
 Instalar dependencias:
@@ -133,9 +133,9 @@ JWT_SECRET=tu_secreto
 JWT_EXPIRES_IN=1h
 ```
 
-Para pruebas se utiliza un archivo independiente:
+Para pruebas automatizadas se utiliza:
 
-```text
+```
 .env.test
 ```
 
@@ -173,153 +173,47 @@ Las pruebas verifican:
 - Acceso sin autenticación
 - Hash de contraseñas
 - Generación y validación de JWT
+- Autenticación mediante Passport.js
+- Protección de rutas privadas
+- Autorización basada en roles
 
 ---
 
-# Estrategias Passport
+# Autenticación
 
-La autenticación se encuentra centralizada mediante Passport.js.
+La autenticación está centralizada mediante Passport.js.
 
-## register
+## Estrategias implementadas
+
+### register
 
 Se encarga de:
 
-- Registrar nuevos usuarios
-- Validar correo duplicado
-- Hashear la contraseña con bcrypt
-- Asignar el rol por defecto (`user`)
+- Registrar nuevos usuarios.
+- Validar correo duplicado.
+- Hashear la contraseña mediante bcrypt.
+- Asignar automáticamente el rol `user`.
 
 ---
 
-## login
+### login
 
 Se encarga de:
 
-- Validar credenciales
-- Autenticar usuarios mediante Passport Local
+- Validar credenciales.
+- Autenticar usuarios mediante Passport Local.
 
-Después de una autenticación exitosa, el **controller** genera el JWT y crea la cookie HTTP Only.
+Después de una autenticación exitosa, el controller genera el JWT y crea la cookie HTTP Only.
 
 ---
 
-## current
+### current
 
 Utiliza Passport JWT para:
 
-- Leer el JWT desde la cookie `currentUser`
-- Validar el token
-- Colocar el usuario autenticado en `req.user`
-
----
-
-# Endpoints
-
-## Registro
-
-**POST**
-
-```
-/api/sessions/register
-```
-
-### Request
-
-```json
-{
-    "first_name": "Daniela",
-    "last_name": "Martinez",
-    "email": "daniela@gmail.com",
-    "password": "12345678"
-}
-```
-
-### Response
-
-```json
-{
-    "status": "success",
-    "payload": {
-        "_id": "...",
-        "first_name": "Daniela",
-        "last_name": "Martinez",
-        "email": "daniela@gmail.com",
-        "role": "user"
-    }
-}
-```
-
----
-
-## Login
-
-**POST**
-
-```
-/api/sessions/login
-```
-
-### Request
-
-```json
-{
-    "email": "daniela@gmail.com",
-    "password": "12345678"
-}
-```
-
-### Response
-
-```json
-{
-    "status": "success",
-    "payload": {
-        "_id": "...",
-        "email": "daniela@gmail.com",
-        "role": "user"
-    }
-}
-```
-
-Genera una cookie HTTP Only llamada:
-
-```
-currentUser
-```
-
----
-
-## Usuario autenticado
-
-**GET**
-
-```
-/api/sessions/current
-```
-
-### Response
-
-```json
-{
-    "status": "success",
-    "payload": {
-        "id": "...",
-        "email": "daniela@gmail.com",
-        "role": "user"
-    }
-}
-```
-
----
-
-## Logout
-
-**POST**
-
-```
-/api/sessions/logout
-```
-
-Elimina la cookie `currentUser`.
+- Leer el JWT desde la cookie `currentUser`.
+- Validar el token.
+- Colocar el usuario autenticado en `req.user`.
 
 ---
 
@@ -355,24 +249,301 @@ Logout
 
 ---
 
+# Roles
+
+El sistema implementa autorización basada en roles.
+
+## Roles disponibles
+
+- user
+- organizer
+- admin
+
+El registro público siempre crea usuarios con rol **user**.
+
+Los roles **organizer** y **admin** únicamente pueden asignarse desde la base de datos.
+
+---
+
+# Matriz de permisos
+
+| Acción | user | organizer | admin |
+|--------|:----:|:---------:|:-----:|
+| Consultar eventos | ✅ | ✅ | ✅ |
+| Crear eventos | ❌ | ✅ | ✅ |
+| Modificar eventos propios | ❌ | ✅ | ✅ |
+| Modificar cualquier evento | ❌ | ❌ | ✅ |
+| Ver todos los usuarios | ❌ | ❌ | ✅ |
+
+---
+
+# Gestión de Eventos
+
+La entidad principal del sistema es **Event**.
+
+## Modelo Event
+
+Cada evento contiene los siguientes campos:
+
+| Campo | Descripción |
+|--------|-------------|
+| title | Título del evento |
+| description | Descripción |
+| category | Categoría |
+| date | Fecha |
+| location | Ubicación |
+| capacity | Cupo máximo |
+| price | Precio |
+| status | Estado |
+| organizer | Referencia al usuario organizador |
+
+El campo **organizer** es una referencia (`ObjectId`) al usuario que creó el evento.
+
+---
+
+## Estados del evento
+
+- draft
+- published
+- cancelled
+- finished
+
+---
+
+# Endpoints de Sesiones
+
+## Registro
+
+**POST**
+
+```
+/api/sessions/register
+```
+
+---
+
+## Login
+
+**POST**
+
+```
+/api/sessions/login
+```
+
+Genera la cookie HTTP Only:
+
+```
+currentUser
+```
+
+---
+
+## Usuario autenticado
+
+**GET**
+
+```
+/api/sessions/current
+```
+
+---
+
+## Logout
+
+**POST**
+
+```
+/api/sessions/logout
+```
+
+Elimina la cookie `currentUser`.
+
+---
+
+## Obtener usuarios
+
+**GET**
+
+```
+/api/sessions/users
+```
+
+Acceso exclusivo para administradores.
+
+---
+
+# Endpoints de Eventos
+
+## Crear evento
+
+**POST**
+
+```
+/api/events
+```
+
+Roles permitidos:
+
+- organizer
+- admin
+
+El organizador se obtiene automáticamente del usuario autenticado.
+
+---
+
+## Listar eventos
+
+**GET**
+
+```
+/api/events
+```
+
+Acceso público.
+
+---
+
+## Obtener un evento
+
+**GET**
+
+```
+/api/events/:id
+```
+
+Acceso público.
+
+---
+
+## Actualizar un evento
+
+**PUT**
+
+```
+/api/events/:id
+```
+
+Solo:
+
+- organizer propietario
+- admin
+
+---
+
+## Cambiar estado
+
+**PATCH**
+
+```
+/api/events/:id/status
+```
+
+Solo:
+
+- organizer propietario
+- admin
+
+---
+
+# Filtros
+
+El endpoint
+
+```
+GET /api/events
+```
+
+permite filtrar mediante:
+
+- status
+- category
+- location
+- dateFrom
+- dateTo
+
+Ejemplo:
+
+```
+GET /api/events?status=published&category=Workshop
+```
+
+---
+
+# Paginación
+
+Parámetros soportados:
+
+```
+page
+limit
+```
+
+Ejemplo:
+
+```
+GET /api/events?page=2&limit=5
+```
+
+Respuesta:
+
+```json
+{
+    "status": "success",
+    "payload": {
+        "data": [],
+        "page": 2,
+        "limit": 5,
+        "total": 25,
+        "totalPages": 5
+    }
+}
+```
+
+---
+
+# Ordenamiento
+
+Actualmente se soporta:
+
+```
+GET /api/events?sort=date
+```
+
+---
+
+# Reglas de negocio
+
+- No se pueden crear eventos con fecha pasada.
+- La capacidad debe ser mayor que cero.
+- El precio no puede ser negativo.
+- El organizador se obtiene automáticamente del usuario autenticado.
+- Un organizer únicamente puede modificar sus propios eventos.
+- Un admin puede modificar cualquier evento.
+- Los eventos cancelados no pueden modificarse.
+- Un evento finalizado no puede volver al estado `published`.
+- Los eventos no se eliminan físicamente; únicamente cambian su estado a `cancelled`.
+
+---
+
 # Seguridad
 
-El proyecto implementa las siguientes medidas de seguridad:
+El proyecto implementa:
 
-- Contraseñas almacenadas mediante bcrypt.
+- Contraseñas protegidas mediante bcrypt.
 - JWT firmado con una clave secreta.
 - Cookie HTTP Only.
-- Validación de datos con Zod.
+- Passport.js.
+- Validación con Zod.
 - Manejo centralizado de errores.
 - Variables de entorno mediante dotenv.
-- Password nunca devuelto en respuestas.
-- Password nunca incluido en el JWT.
+- La contraseña nunca se devuelve en respuestas.
+- La contraseña nunca se almacena en el JWT.
 
 ---
 
 # Escalabilidad
 
-La autenticación fue centralizada mediante Passport.js para facilitar la incorporación de nuevas estrategias sin modificar la estructura del proyecto.
+La autenticación fue centralizada mediante Passport.js para facilitar la incorporación de nuevas estrategias sin modificar la arquitectura.
 
 El sistema queda preparado para integrar proveedores como:
 
@@ -382,23 +553,40 @@ El sistema queda preparado para integrar proveedores como:
 
 ---
 
-## Estado del proyecto
+# Códigos HTTP
 
-✅ Registro de usuarios
+| Código | Significado |
+|---------|-------------|
+| 200 | Operación exitosa |
+| 201 | Recurso creado |
+| 400 | Solicitud inválida |
+| 401 | Usuario no autenticado |
+| 403 | Usuario autenticado sin permisos suficientes |
+| 404 | Recurso no encontrado |
 
-✅ Login
+---
 
-✅ JWT
+# Estado del proyecto
 
-✅ Cookies HTTP Only
+Actualmente el proyecto implementa:
 
-✅ Passport.js
+- ✅ Registro de usuarios
+- ✅ Login
+- ✅ JWT
+- ✅ Cookies HTTP Only
+- ✅ Passport.js
+- ✅ Autenticación centralizada
+- ✅ Autorización basada en roles
+- ✅ CRUD de eventos
+- ✅ Validaciones de negocio
+- ✅ Filtros
+- ✅ Paginación
+- ✅ Ordenamiento
+- ✅ MongoDB
+- ✅ Arquitectura por capas
+- ✅ Pruebas automatizadas
 
-✅ MongoDB
-
-✅ Pruebas automatizadas
-
-✅ Arquitectura por capas
+---
 
 # Autor
 

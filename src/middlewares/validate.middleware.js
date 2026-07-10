@@ -13,7 +13,7 @@ export const validate = (schema) => {
             return res.status(400).json({
                 status: "error",
                 message: "Datos inválidos",
-                errors: error.errors
+                errors: error.issues
             });
 
         }

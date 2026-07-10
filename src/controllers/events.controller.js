@@ -26,7 +26,8 @@ export const getEvents = async (req, res, next) => {
 
     try {
 
-        const events = await eventsService.getAll();
+        const events =
+            await eventsService.getAll(req.query);
 
         res.status(200).json({
             status: "success",
@@ -61,5 +62,50 @@ export const updateEvent = async (req, res, next) => {
             next(error);
 
         }
+};
 
-    };
+export const getEventById = async (req, res, next) => {
+
+    try {
+
+        const event =
+            await eventsService.getById(
+                req.params.id
+            );
+
+        res.status(200).json({
+            status: "success",
+            payload: event
+        });
+
+    } catch (error) {
+
+        next(error);
+
+    }
+
+};
+
+export const changeStatus = async (req, res, next) => {
+
+    try {
+
+        const event =
+            await eventsService.changeStatus(
+                req.params.id,
+                req.body.status,
+                req.user
+            );
+
+        res.status(200).json({
+            status: "success",
+            payload: event
+        });
+
+    } catch (error) {
+
+        next(error);
+
+    }
+
+};
