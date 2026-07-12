@@ -1,599 +1,373 @@
-# Plataforma de Eventos e Inscripciones - Backend
+# Events and Registration Platform API
 
-API REST desarrollada con **Node.js**, **Express** y **MongoDB** para la gestión de usuarios, autenticación y administración de eventos.
-
-La aplicación implementa autenticación centralizada mediante **Passport.js**, utilizando **JWT** almacenado en una **cookie HTTP Only**, además de un sistema de autorización basado en roles y un CRUD completo para la entidad **Event**.
+API REST para la gestión integral de eventos y su proceso de registro, desarrollada como proyecto final de la asignatura **Backend II**. El sistema permite la creación y administración de eventos, así como el registro, emisión y control de tickets de los usuarios, implementando una arquitectura por capas robusta, validación estricta de datos y buenas prácticas de seguridad.
 
 ---
 
-# Tecnologías utilizadas
+## Tabla de Contenidos
 
-- Node.js
-- Express
-- MongoDB Atlas / MongoDB
-- Mongoose
-- Passport.js
-- Passport Local
-- Passport JWT
-- JSON Web Token (JWT)
-- bcrypt
-- Zod
-- Supertest
-- Dotenv
-
----
-
-# Arquitectura del proyecto
-
-El proyecto sigue una arquitectura por capas para mantener el código organizado y facilitar su mantenimiento.
-
-```
-Routes
-    │
-    ▼
-Passport Strategies
-    │
-    ▼
-Controllers
-    │
-    ▼
-Services
-    │
-    ▼
-Repositories
-    │
-    ▼
-DAO
-    │
-    ▼
-MongoDB
-```
-
-Cada capa posee una única responsabilidad.
+1. [Arquitectura del Proyecto](#arquitectura-del-proyecto)
+2. [Tecnologías Utilizadas](#tecnologías-utilizadas)
+3. [Instalación](#instalación)
+4. [Variables de Entorno](#variables-de-entorno)
+5. [Ejecución](#ejecución)
+6. [Pruebas](#pruebas)
+7. [Autenticación](#autenticación)
+8. [Roles y Permisos](#roles-y-permisos)
+9. [Gestión de Eventos](#gestión-de-eventos)
+10. [Gestión de Tickets](#gestión-de-tickets)
+11. [Reglas de Negocio](#reglas-de-negocio)
+12. [Endpoints](#endpoints)
+13. [DTOs (Data Transfer Objects)](#dtos-data-transfer-objects)
+14. [Seguridad](#seguridad)
+15. [Escalabilidad](#escalabilidad)
+16. [Códigos de Estado HTTP](#códigos-de-estado-http)
+17. [Estado del Proyecto](#estado-del-proyecto)
+18. [Autor](#autor)
 
 ---
 
-# Estructura del proyecto
+## Arquitectura del Proyecto
+
+El proyecto está construido bajo el patrón **DAO – Repository – DTO**, aplicando una separación estricta de responsabilidades a lo largo de las capas de la aplicación. El flujo de una petición sigue el siguiente orden:
 
 ```
-src
-│
-├── config
-│   ├── env.config.js
-│   ├── mongoose.js
-│   └── passport.config.js
-│
-├── controllers
-│
-├── dao
-│
-├── middlewares
-│
-├── models
-│
-├── repositories
-│
-├── routes
-│
-├── schemas
-│
-├── services
-│
-├── utils
-│   ├── ApiError.js
-│   ├── hash.js
-│   ├── jwt.js
-│   └── logger.js
-│
-└── app.js
-
-server.js
-package.json
+Cliente → Route → Controller → Service → Repository → DAO → Model (MongoDB)
 ```
+
+### Responsabilidad de cada capa
+
+| Capa | Responsabilidad |
+|------|------------------|
+| **Route** | Define los endpoints disponibles, el método HTTP y enlaza cada ruta con su controlador correspondiente. No contiene lógica de negocio. |
+| **Controller** | Recibe la petición HTTP, valida el formato de entrada mediante los esquemas de Zod, invoca al servicio correspondiente y construye la respuesta HTTP (status code + payload). No accede directamente a la base de datos. |
+| **Service** | Contiene la lógica de negocio de la aplicación: validaciones semánticas, reglas de dominio, orquestación entre entidades y transformación de datos mediante DTOs. Es agnóstico a Express y a la base de datos. |
+| **Repository** | Actúa como intermediario entre el Service y el DAO, exponiendo operaciones de negocio orientadas a entidades (por ejemplo, `buscarEventosDisponibles`). Desacopla al Service del motor de persistencia específico. |
+| **DAO (Data Access Object)** | Encapsula el acceso directo a la base de datos mediante Mongoose, ejecutando operaciones CRUD puras sobre los modelos. Es la única capa que interactúa directamente con la base de datos. |
+| **Model** | Define los esquemas de Mongoose (estructura, tipos de datos, índices y validaciones a nivel de base de datos) para cada entidad del sistema. |
+| **DTO** | Estructura los datos que se transfieren entre capas y hacia el cliente, evitando exponer campos sensibles o innecesarios del modelo de datos. |
+
+Esta arquitectura favorece la **mantenibilidad**, la **testabilidad** y la posibilidad de sustituir el motor de persistencia sin afectar la lógica de negocio.
 
 ---
 
-# Instalación
+## Tecnologías Utilizadas
 
-Clonar el repositorio:
-
-```bash
-git clone https://github.com/DanyMB2326/cucotickets.git
-```
-
-Entrar al proyecto:
-
-```bash
-cd cucotickets
-```
-
-Instalar dependencias:
-
-```bash
-npm install
-```
+- **Node.js** – Entorno de ejecución de JavaScript en el servidor.
+- **Express.js** – Framework para la construcción de la API REST.
+- **MongoDB** – Base de datos NoSQL orientada a documentos.
+- **Mongoose** – ODM para el modelado de datos y la comunicación con MongoDB.
+- **Zod** – Validación y tipado de esquemas de entrada.
+- **bcrypt** – Hasheo seguro de contraseñas.
+- **JSON Web Tokens (JWT)** – Autenticación basada en tokens.
+- **ES Modules (ESM)** – Sistema de módulos nativo de JavaScript.
+- **Node Test Runner + Supertest** – Pruebas unitarias e de integración.
 
 ---
 
-# Variables de entorno
+## Instalación
 
-Crear un archivo `.env` utilizando como base `.env.example`.
+1. Clonar el repositorio:
 
-Ejemplo:
+   ```bash
+   git clone https://github.com/DanyMB2326/<nombre-del-repositorio>.git
+   cd <nombre-del-repositorio>
+   ```
+
+2. Instalar las dependencias:
+
+   ```bash
+   npm install
+   ```
+
+3. Crear el archivo de variables de entorno `.env` en la raíz del proyecto (ver sección siguiente).
+
+---
+
+## Variables de Entorno
+
+Crear un archivo `.env` en la raíz del proyecto con las siguientes variables:
 
 ```env
-PORT=8080
-
+# Servidor
+PORT=3000
 NODE_ENV=development
 
-MONGO_URL=mongodb://localhost:27017/plataforma-eventos
+# Base de datos
+MONGO_URI=mongodb://localhost:27017/events_platform
 
-JWT_SECRET=tu_secreto
+# Autenticación
+JWT_SECRET=tu_clave_secreta
+JWT_EXPIRES_IN=1d
 
-JWT_EXPIRES_IN=1h
+# Seguridad
+BCRYPT_SALT_ROUNDS=10
 ```
 
-Para pruebas automatizadas se utiliza:
-
-```
-.env.test
-```
+> **Nota:** El archivo `.env` no debe subirse al repositorio. Se recomienda incluir `.env.example` con las variables sin valores sensibles como referencia.
 
 ---
 
-# Ejecutar el proyecto
+## Ejecución
 
-Modo desarrollo
+**Modo desarrollo** (con recarga automática):
 
 ```bash
 npm run dev
 ```
 
-Modo producción
+**Modo producción:**
 
 ```bash
 npm start
 ```
 
+El servidor quedará disponible por defecto en:
+
+```
+http://localhost:3000
+```
+
 ---
 
-# Pruebas
+## Pruebas
 
-Ejecutar todas las pruebas:
+El proyecto utiliza el **test runner nativo de Node.js** junto con **Supertest** para pruebas de integración sobre los endpoints.
 
 ```bash
 npm test
 ```
 
-Las pruebas verifican:
+Las pruebas cubren, entre otros aspectos:
 
-- Registro de usuarios
-- Inicio de sesión
-- Usuario autenticado
-- Acceso sin autenticación
-- Hash de contraseñas
-- Generación y validación de JWT
-- Autenticación mediante Passport.js
-- Protección de rutas privadas
-- Autorización basada en roles
+- Validación de esquemas de entrada (Zod).
+- Casos de éxito y error en los endpoints de autenticación, eventos y tickets.
+- Reglas de negocio (por ejemplo, control de capacidad de eventos y prevención de doble registro).
+- Respuestas y códigos de estado HTTP esperados.
 
 ---
 
-# Autenticación
+## Autenticación
 
-La autenticación está centralizada mediante Passport.js.
+La autenticación se implementa mediante **JSON Web Tokens (JWT)**:
 
-## Estrategias implementadas
+1. El usuario se registra o inicia sesión mediante los endpoints correspondientes.
+2. Las contraseñas se almacenan utilizando **bcrypt** con salting, nunca en texto plano.
+3. Al iniciar sesión exitosamente, el servidor emite un **token JWT** firmado con `JWT_SECRET`.
+4. El cliente debe enviar el token en el header `Authorization` en las peticiones protegidas:
 
-### register
+   ```
+   Authorization: Bearer <token>
+   ```
 
-Se encarga de:
-
-- Registrar nuevos usuarios.
-- Validar correo duplicado.
-- Hashear la contraseña mediante bcrypt.
-- Asignar automáticamente el rol `user`.
-
----
-
-### login
-
-Se encarga de:
-
-- Validar credenciales.
-- Autenticar usuarios mediante Passport Local.
-
-Después de una autenticación exitosa, el controller genera el JWT y crea la cookie HTTP Only.
+5. Un middleware de autenticación verifica la validez y vigencia del token antes de permitir el acceso a rutas protegidas.
 
 ---
 
-### current
+## Roles y Permisos
 
-Utiliza Passport JWT para:
+El sistema contempla los siguientes roles:
 
-- Leer el JWT desde la cookie `currentUser`.
-- Validar el token.
-- Colocar el usuario autenticado en `req.user`.
+| Rol | Descripción | Permisos principales |
+|-----|-------------|------------------------|
+| **Administrador** | Gestiona la plataforma en su totalidad. | Crear, editar y eliminar eventos; gestionar usuarios; consultar y administrar todos los tickets. |
+| **Organizador** | Responsable de la creación y gestión de eventos propios. | Crear y editar sus propios eventos; consultar los tickets asociados a sus eventos. |
+| **Usuario/Asistente** | Usuario final de la plataforma. | Consultar eventos disponibles; registrarse a eventos; gestionar sus propios tickets. |
 
----
-
-# Flujo de autenticación
-
-```
-Registro
-     │
-     ▼
-Login
-     │
-     ▼
-Passport Local
-     │
-     ▼
-JWT
-     │
-     ▼
-Cookie HTTP Only
-     │
-     ▼
-GET /current
-     │
-     ▼
-Passport JWT
-     │
-     ▼
-Usuario autenticado
-     │
-     ▼
-Logout
-```
+El control de acceso se implementa mediante middlewares de autorización basados en el rol contenido en el payload del token JWT.
 
 ---
 
-# Roles
+## Gestión de Eventos
 
-El sistema implementa autorización basada en roles.
+Los eventos son la entidad central de la plataforma. Cada evento cuenta con:
 
-## Roles disponibles
+- Título, descripción y categoría.
+- Fecha y hora de inicio/fin.
+- Ubicación (física o virtual).
+- Capacidad máxima de asistentes.
+- Precio (gratuito o de pago).
+- Estado (`activo`, `cancelado`, `finalizado`).
+- Organizador responsable.
 
-- user
-- organizer
-- admin
+**Funcionalidades principales:**
 
-El registro público siempre crea usuarios con rol **user**.
-
-Los roles **organizer** y **admin** únicamente pueden asignarse desde la base de datos.
-
----
-
-# Matriz de permisos
-
-| Acción | user | organizer | admin |
-|--------|:----:|:---------:|:-----:|
-| Consultar eventos | ✅ | ✅ | ✅ |
-| Crear eventos | ❌ | ✅ | ✅ |
-| Modificar eventos propios | ❌ | ✅ | ✅ |
-| Modificar cualquier evento | ❌ | ❌ | ✅ |
-| Ver todos los usuarios | ❌ | ❌ | ✅ |
+- Creación, edición y eliminación de eventos (rol Organizador/Administrador).
+- Consulta pública de eventos disponibles, con filtros por fecha, categoría y ubicación.
+- Control automático de disponibilidad de cupo en función de los tickets emitidos.
 
 ---
 
-# Gestión de Eventos
+## Gestión de Tickets
 
-La entidad principal del sistema es **Event**.
+Los tickets representan el registro de un usuario a un evento específico. Cada ticket incluye:
 
-## Modelo Event
+- Referencia al evento y al usuario.
+- Código único de identificación.
+- Estado (`confirmado`, `cancelado`, `usado`).
+- Fecha de emisión.
 
-Cada evento contiene los siguientes campos:
+**Funcionalidades principales:**
 
-| Campo | Descripción |
-|--------|-------------|
-| title | Título del evento |
-| description | Descripción |
-| category | Categoría |
-| date | Fecha |
-| location | Ubicación |
-| capacity | Cupo máximo |
-| price | Precio |
-| status | Estado |
-| organizer | Referencia al usuario organizador |
-
-El campo **organizer** es una referencia (`ObjectId`) al usuario que creó el evento.
+- Emisión de ticket al registrarse a un evento.
+- Validación de disponibilidad de cupo antes de emitir el ticket.
+- Cancelación de tickets por parte del usuario o del administrador.
+- Consulta del historial de tickets por usuario.
 
 ---
 
-## Estados del evento
+## Reglas de Negocio
 
-- draft
-- published
-- cancelled
-- finished
-
----
-
-# Endpoints de Sesiones
-
-## Registro
-
-**POST**
-
-```
-/api/sessions/register
-```
+- Un usuario **no puede registrarse dos veces** al mismo evento mientras tenga un ticket activo.
+- Un evento **no puede exceder su capacidad máxima**; al alcanzarla, se rechaza la emisión de nuevos tickets.
+- Solo el **organizador propietario** del evento o un **administrador** pueden editarlo o eliminarlo.
+- No es posible registrar tickets para eventos con estado `cancelado` o `finalizado`.
+- La cancelación de un ticket libera automáticamente el cupo correspondiente en el evento.
+- Las contraseñas deben cumplir criterios mínimos de seguridad definidos en el esquema de validación de Zod.
 
 ---
 
-## Login
+## Endpoints
 
-**POST**
+### Autenticación
 
-```
-/api/sessions/login
-```
+| Método | Endpoint | Descripción | Acceso |
+|--------|----------|-------------|--------|
+| `POST` | `/api/auth/register` | Registro de un nuevo usuario. | Público |
+| `POST` | `/api/auth/login` | Inicio de sesión y emisión de token JWT. | Público |
+| `POST` | `/api/auth/logout` | Cierre de sesión. | Autenticado |
 
-Genera la cookie HTTP Only:
+### Usuarios
 
-```
-currentUser
-```
+| Método | Endpoint | Descripción | Acceso |
+|--------|----------|-------------|--------|
+| `GET` | `/api/users/me` | Obtiene el perfil del usuario autenticado. | Autenticado |
+| `PUT` | `/api/users/me` | Actualiza los datos del usuario autenticado. | Autenticado |
+| `GET` | `/api/users` | Lista todos los usuarios. | Administrador |
+| `DELETE` | `/api/users/:id` | Elimina un usuario. | Administrador |
 
----
+### Eventos
 
-## Usuario autenticado
+| Método | Endpoint | Descripción | Acceso |
+|--------|----------|-------------|--------|
+| `GET` | `/api/events` | Lista los eventos disponibles (con filtros opcionales). | Público |
+| `GET` | `/api/events/:id` | Obtiene el detalle de un evento. | Público |
+| `POST` | `/api/events` | Crea un nuevo evento. | Organizador / Administrador |
+| `PUT` | `/api/events/:id` | Actualiza un evento existente. | Organizador (propietario) / Administrador |
+| `DELETE` | `/api/events/:id` | Elimina un evento. | Organizador (propietario) / Administrador |
 
-**GET**
+### Tickets
 
-```
-/api/sessions/current
-```
-
----
-
-## Logout
-
-**POST**
-
-```
-/api/sessions/logout
-```
-
-Elimina la cookie `currentUser`.
-
----
-
-## Obtener usuarios
-
-**GET**
-
-```
-/api/sessions/users
-```
-
-Acceso exclusivo para administradores.
+| Método | Endpoint | Descripción | Acceso |
+|--------|----------|-------------|--------|
+| `POST` | `/api/events/:id/tickets` | Registra al usuario autenticado en el evento (emite ticket). | Autenticado |
+| `GET` | `/api/tickets/me` | Lista los tickets del usuario autenticado. | Autenticado |
+| `GET` | `/api/tickets/:id` | Obtiene el detalle de un ticket. | Autenticado / Administrador |
+| `PATCH` | `/api/tickets/:id/cancel` | Cancela un ticket. | Autenticado (propietario) / Administrador |
+| `GET` | `/api/events/:id/tickets` | Lista los tickets de un evento. | Organizador (propietario) / Administrador |
 
 ---
 
-# Endpoints de Eventos
+## DTOs (Data Transfer Objects)
 
-## Crear evento
+Los DTOs se utilizan para controlar de manera explícita la información que se expone en las respuestas de la API, evitando filtrar campos sensibles (como contraseñas hasheadas o metadatos internos).
 
-**POST**
+**Ejemplos representativos:**
 
-```
-/api/events
-```
-
-Roles permitidos:
-
-- organizer
-- admin
-
-El organizador se obtiene automáticamente del usuario autenticado.
-
----
-
-## Listar eventos
-
-**GET**
-
-```
-/api/events
-```
-
-Acceso público.
-
----
-
-## Obtener un evento
-
-**GET**
-
-```
-/api/events/:id
-```
-
-Acceso público.
-
----
-
-## Actualizar un evento
-
-**PUT**
-
-```
-/api/events/:id
-```
-
-Solo:
-
-- organizer propietario
-- admin
-
----
-
-## Cambiar estado
-
-**PATCH**
-
-```
-/api/events/:id/status
-```
-
-Solo:
-
-- organizer propietario
-- admin
-
----
-
-# Filtros
-
-El endpoint
-
-```
-GET /api/events
-```
-
-permite filtrar mediante:
-
-- status
-- category
-- location
-- dateFrom
-- dateTo
-
-Ejemplo:
-
-```
-GET /api/events?status=published&category=Workshop
-```
-
----
-
-# Paginación
-
-Parámetros soportados:
-
-```
-page
-limit
-```
-
-Ejemplo:
-
-```
-GET /api/events?page=2&limit=5
-```
-
-Respuesta:
-
-```json
+```javascript
+// UserResponseDTO
 {
-    "status": "success",
-    "payload": {
-        "data": [],
-        "page": 2,
-        "limit": 5,
-        "total": 25,
-        "totalPages": 5
-    }
+  id: string,
+  nombre: string,
+  email: string,
+  rol: "admin" | "organizador" | "usuario",
+  createdAt: Date
+}
+
+// EventResponseDTO
+{
+  id: string,
+  titulo: string,
+  descripcion: string,
+  fecha: Date,
+  ubicacion: string,
+  capacidad: number,
+  cuposDisponibles: number,
+  precio: number,
+  estado: "activo" | "cancelado" | "finalizado",
+  organizador: UserResponseDTO
+}
+
+// TicketResponseDTO
+{
+  id: string,
+  codigo: string,
+  estado: "confirmado" | "cancelado" | "usado",
+  evento: EventResponseDTO,
+  usuario: UserResponseDTO,
+  fechaEmision: Date
 }
 ```
 
 ---
 
-# Ordenamiento
+## Seguridad
 
-Actualmente se soporta:
-
-```
-GET /api/events?sort=date
-```
-
----
-
-# Reglas de negocio
-
-- No se pueden crear eventos con fecha pasada.
-- La capacidad debe ser mayor que cero.
-- El precio no puede ser negativo.
-- El organizador se obtiene automáticamente del usuario autenticado.
-- Un organizer únicamente puede modificar sus propios eventos.
-- Un admin puede modificar cualquier evento.
-- Los eventos cancelados no pueden modificarse.
-- Un evento finalizado no puede volver al estado `published`.
-- Los eventos no se eliminan físicamente; únicamente cambian su estado a `cancelled`.
+- **Hasheo de contraseñas** mediante `bcrypt`, nunca se almacenan en texto plano.
+- **Autenticación basada en JWT** con expiración configurable.
+- **Validación estricta de entrada** en todos los endpoints mediante esquemas de Zod, previniendo inyección de datos malformados.
+- **Control de acceso basado en roles (RBAC)** mediante middlewares de autorización.
+- **Manejo centralizado de errores**, evitando la exposición de información sensible (stack traces, detalles internos) en producción.
+- **Variables de entorno** para el manejo de credenciales y secretos, excluidas del control de versiones.
 
 ---
 
-# Seguridad
+## Escalabilidad
 
-El proyecto implementa:
+La arquitectura por capas (DAO–Repository–DTO) fue diseñada considerando el crecimiento futuro del sistema:
 
-- Contraseñas protegidas mediante bcrypt.
-- JWT firmado con una clave secreta.
-- Cookie HTTP Only.
-- Passport.js.
-- Validación con Zod.
-- Manejo centralizado de errores.
-- Variables de entorno mediante dotenv.
-- La contraseña nunca se devuelve en respuestas.
-- La contraseña nunca se almacena en el JWT.
+- **Independencia del motor de persistencia:** al aislar el acceso a datos en la capa DAO, sería posible migrar de MongoDB a otro motor de base de datos sin modificar la lógica de negocio.
+- **Bajo acoplamiento entre capas**, lo que facilita la incorporación de nuevas funcionalidades (por ejemplo, pagos, notificaciones o reportes) sin afectar los módulos existentes.
+- **Modularidad**, que permite escalar el proyecto hacia una arquitectura de microservicios en etapas futuras si el volumen de usuarios lo requiere.
+- **Pruebas automatizadas**, que garantizan estabilidad ante cambios y refactorizaciones progresivas.
 
 ---
 
-# Escalabilidad
+## Códigos de Estado HTTP
 
-La autenticación fue centralizada mediante Passport.js para facilitar la incorporación de nuevas estrategias sin modificar la arquitectura.
-
-El sistema queda preparado para integrar proveedores como:
-
-- Google OAuth
-- GitHub OAuth
-- Facebook OAuth
-
----
-
-# Códigos HTTP
-
-| Código | Significado |
-|---------|-------------|
-| 200 | Operación exitosa |
-| 201 | Recurso creado |
-| 400 | Solicitud inválida |
-| 401 | Usuario no autenticado |
-| 403 | Usuario autenticado sin permisos suficientes |
-| 404 | Recurso no encontrado |
+| Código | Significado | Uso en la API |
+|--------|-------------|----------------|
+| `200 OK` | Solicitud procesada correctamente. | Consultas y actualizaciones exitosas. |
+| `201 Created` | Recurso creado exitosamente. | Registro de usuario, creación de evento o ticket. |
+| `400 Bad Request` | Error de validación en los datos enviados. | Fallos en la validación con Zod. |
+| `401 Unauthorized` | Autenticación requerida o token inválido/ausente. | Acceso a rutas protegidas sin token válido. |
+| `403 Forbidden` | El usuario no tiene permisos suficientes. | Acceso a recursos restringidos por rol. |
+| `404 Not Found` | El recurso solicitado no existe. | Evento, ticket o usuario inexistente. |
+| `409 Conflict` | Conflicto con el estado actual del recurso. | Registro duplicado a un evento, cupo agotado. |
+| `500 Internal Server Error` | Error inesperado del servidor. | Fallos no controlados en la aplicación. |
 
 ---
 
-# Estado del proyecto
+## Estado del Proyecto
 
-Actualmente el proyecto implementa:
+🚧 **En desarrollo activo**
 
-- ✅ Registro de usuarios
-- ✅ Login
-- ✅ JWT
-- ✅ Cookies HTTP Only
-- ✅ Passport.js
-- ✅ Autenticación centralizada
-- ✅ Autorización basada en roles
-- ✅ CRUD de eventos
-- ✅ Validaciones de negocio
-- ✅ Filtros
-- ✅ Paginación
-- ✅ Ordenamiento
-- ✅ MongoDB
-- ✅ Arquitectura por capas
-- ✅ Pruebas automatizadas
+El proyecto se encuentra en fase de implementación como entrega final de la asignatura Backend II. Actualmente:
+
+- ✅ Arquitectura por capas (DAO–Repository–DTO) implementada.
+- ✅ Validación de datos con Zod.
+- ✅ Hasheo de contraseñas con bcrypt.
+- ✅ Suite de pruebas con Node Test Runner y Supertest (pasando en su totalidad).
+- 🔄 Documentación y ajustes finales en curso.
 
 ---
 
-# Autor
+## Autor
 
-**Daniela Martínez Bravo**
+**Daniela** – Estudiante de Ingeniería en Computación, Facultad de Ingeniería, UNAM.
 
-Facultad de Ingeniería
+- GitHub: [@DanyMB2326](https://github.com/DanyMB2326)
 
-Universidad Nacional Autónoma de México (UNAM)
+---
 
-Backend II
+*Proyecto desarrollado con fines académicos como entrega final de la asignatura Backend II.*

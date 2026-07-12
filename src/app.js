@@ -9,9 +9,7 @@ import { errorHandler } from "./middlewares/errorHandler.middleware.js";
 import passport from "passport";
 import { initializePassport } from "./config/passport.config.js";
 
-console.log("Antes de initializePassport");
 initializePassport();
-console.log("Después de initializePassport");
 
 const app = express();
 

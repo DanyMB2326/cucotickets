@@ -1,17 +1,19 @@
 import eventsService from "../services/events.service.js";
+import EventDTO from "../dto/EventDTO.js";
 
 export const createEvent = async (req, res, next) => {
 
     try {
 
-        const event = await eventsService.create(
-            req.body,
-            req.user.id
-        );
+        const event =
+            await eventsService.create(
+                req.body,
+                req.user.id
+            );
 
         res.status(201).json({
             status: "success",
-            payload: event
+            payload: new EventDTO(event)
         });
 
     } catch (error) {
@@ -26,12 +28,25 @@ export const getEvents = async (req, res, next) => {
 
     try {
 
-        const events =
-            await eventsService.getAll(req.query);
+        const result =
+            await eventsService.getAll(
+                req.query
+            );
 
         res.status(200).json({
+
             status: "success",
-            payload: events
+
+            payload: {
+
+                ...result,
+
+                data: result.data.map(
+                    event => new EventDTO(event)
+                )
+
+            }
+
         });
 
     } catch (error) {
@@ -44,24 +59,29 @@ export const getEvents = async (req, res, next) => {
 
 export const updateEvent = async (req, res, next) => {
 
-        try {
+    try {
 
-            const event = await eventsService.update(
+        const event =
+            await eventsService.update(
                 req.params.id,
                 req.body,
                 req.user
             );
 
-            res.status(200).json({
-                status: "success",
-                payload: event
-            });
+        res.status(200).json({
 
-        } catch (error) {
+            status: "success",
 
-            next(error);
+            payload: new EventDTO(event)
 
-        }
+        });
+
+    } catch (error) {
+
+        next(error);
+
+    }
+
 };
 
 export const getEventById = async (req, res, next) => {
@@ -74,8 +94,11 @@ export const getEventById = async (req, res, next) => {
             );
 
         res.status(200).json({
+
             status: "success",
-            payload: event
+
+            payload: new EventDTO(event)
+
         });
 
     } catch (error) {
@@ -98,8 +121,11 @@ export const changeStatus = async (req, res, next) => {
             );
 
         res.status(200).json({
+
             status: "success",
-            payload: event
+
+            payload: new EventDTO(event)
+
         });
 
     } catch (error) {

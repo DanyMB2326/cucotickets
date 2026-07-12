@@ -16,7 +16,6 @@ const cookieExtractor = (req) => {
 };
 export const initializePassport = () => {
 
-    console.log("Inicializando Passport...");
 
     passport.use(
         "register",
@@ -104,11 +103,6 @@ export const initializePassport = () => {
 
         }
     )
-);
-
-    console.log(
-    "Estrategias:",
-    Object.keys(passport._strategies)
 );
 
 };
